@@ -1,156 +1,102 @@
-# Personal Literature Manager
+# 📚 Personal Literature Manager
 
-A local-first app for the workflow described in the requirements document:
-drop a PDF → extract metadata → classify + summarize (optional AI step) →
-store locally → search semantically **offline** → open the original PDF →
-ask deeper questions via AI only when you actually need reasoning → get one
-daily "interesting paper" recommendation.
+A privacy-focused, local-first web application designed to help researchers, students, and professionals organize, search, and understand their literature library. 
 
-It runs as a small local web server (Flask) that opens in your browser, and
-is packaged into a single Windows `.exe` so you don't need to touch Python
-day-to-day.
+Drag and drop your PDFs, and let the system automatically extract metadata, classify domains, generate technical summaries, and organize your files—all while keeping your data entirely local.
 
-## What's implemented (Phases 1–5 from the spec, in MVP form)
+---
 
-- Drag-and-drop PDF import, offline metadata extraction (title, authors,
-  year, DOI, abstract) — `app/pdf_processor.py`
-- SQLite database with papers / domains (with subdomains) / tags /
-  embeddings, matching section 10 of the spec — `app/database.py`
-- Optional AI step on import: automatically determines document type (Research Papers, Books, Reports) and classifies by a primary domain and subdomain (strict 2-level hierarchy). Also generates a technical summary and a plain-language explanation — one
-  API call per paper, only if you've configured a key — `app/ai_service.py`
-- Fully offline local semantic search (no API call, no internet required)
-  — `app/embeddings.py`. Uses a real sentence-embedding model if you install
-  `sentence-transformers`, otherwise falls back automatically to a
-  zero-setup offline TF-IDF-style backend — the app never fails to search
-  just because that optional package isn't installed.
-- "Reason across papers" mode: sends only the top locally-matched papers
-  (not your whole library) to the AI for comparison/synthesis — this is the
-  only other place that costs API tokens.
-- "Interesting" flag, read/unread tracking, open-count tracking.
-- "Today's Paper" daily recommendation, weighted toward unread papers you've
-  marked interesting.
-- Configurable AI provider: Anthropic (paid), OpenAI (paid), or **OpenAI-compatible** —
-  which covers genuinely free options with zero code changes:
-  - **Ollama**, running locally on your own machine — 100% free, no API key,
-    fully offline once the model's downloaded. Fits this project's whole
-    "local-first" idea especially well.
-  - **Groq** — free tier, cloud-hosted, fast.
-  - **OpenRouter** — some models are free.
-  Point Settings → Base URL at whichever server you want; the app doesn't
-  care which one it's talking to as long as it speaks the same request format.
-  The app is also 100% usable with **no AI configured at all**.
+## ✨ Key Features
 
-Not yet built (see section 28/29 of the spec for the roadmap — these are
-natural follow-ups, not needed for daily use): automatic *merging* of
-near-duplicate domains, page/section-level full-text search, citation
-graphs, BibTeX/Zotero export.
+- **📂 Automated Hierarchical Organization:** Drop a PDF, and the app automatically determines the document type (e.g., Research Papers, Books, Reports), assigns a primary domain and subdomain (strict 2-level hierarchy), and physically organizes the file on your disk into nested folders.
+- **🧠 AI-Powered Insights (Optional):** Plug in your API key (OpenAI, Anthropic, or even a local **Ollama** server) to automatically generate technical summaries, plain-language explanations, and semantic tags for every imported paper.
+- **🔍 Fully Offline Semantic Search:** Search your library using natural language. The app uses local embeddings (`sentence-transformers`) to understand the meaning behind your search query, entirely offline.
+- **🌳 Beautiful Browser UI:** A clean, intuitive dashboard that mirrors your on-disk folder structure with a collapsible navigation tree. 
+- **💬 Reason Across Papers:** Ask deeper questions across your top locally-matched papers for synthesis and comparison.
+- **📅 "Today's Paper":** Get a daily recommendation weighted toward unread papers you've marked as interesting to help you stay on top of your reading list.
 
-## Quick start (no installation needed once you have the .exe)
+---
 
-1. Double-click `LiteratureManager.exe`.
-2. Your browser opens to `http://127.0.0.1:5001`.
-3. Go to **Import**, drop a PDF.
-4. Optionally go to **Settings** and paste an Anthropic or OpenAI API key to
-   turn on automatic classification/summaries — entirely optional.
-5. Use **Search** to find papers offline, or **Today's Paper** for a daily
-   pick.
+## 🚀 Quick Start (No Installation Needed)
 
-Everything (PDFs + database) is stored in a `library/` folder that appears
-next to the `.exe`. As papers are imported, they are automatically organized into neat, hierarchical folders on your disk (e.g., `library/Research_Papers/Remote_Sensing/Change_Detection/paper.pdf`). The browser UI mirrors this structure with a clean, collapsible navigation tree. 
+If you're on Windows and want to jump right in, you can build or use the standalone `.exe`:
 
-Back that folder up like any other personal data — it's
-plain SQLite + nested PDF files, nothing proprietary.
+1. Run `build_exe.bat` to automatically build the application.
+2. Double-click the generated `dist\LiteratureManager.exe`.
+3. Your browser will automatically open to `http://127.0.0.1:5001`.
+4. Go to **Import** and drag-and-drop a PDF.
+5. *Optional:* Go to **Settings** and add an API key (or configure a local AI model) to unlock automated summaries and classification.
 
-## Building the .exe yourself (Windows)
+Everything (PDFs + database) is stored locally in a `library/` folder that appears next to the executable. Your data never leaves your machine unless you explicitly choose to use a cloud AI provider.
 
-You need Python 3.10+ installed once (from python.org — check "Add
-python.exe to PATH" during setup). Then, from this project folder:
+---
 
-```
-build_exe.bat
-```
+## 💻 Developer Setup
 
-That installs dependencies and runs PyInstaller for you. The result is
-`dist\LiteratureManager.exe` — copy that single file wherever you like.
+If you prefer to run the application directly via Python (useful for macOS/Linux or active development):
 
-If you'd rather do it by hand:
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Abhishek78621/Literaturemanager.git
+   cd Literaturemanager/litmanager
+   ```
 
-```
-python -m pip install -r requirements.txt
-python -m pip install pyinstaller
-pyinstaller litmanager.spec --noconfirm
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+   *(Optional but recommended: `pip install sentence-transformers` for vastly superior offline semantic search).*
+
+3. Run the application:
+   ```bash
+   python run.py
+   # Or use the provided batch script on Windows: run_dev.bat
+   ```
+
+---
+
+## 🏗️ Project Architecture
+
+- **Flask Backend:** Serves the local web interface and handles PDF processing.
+- **SQLite Database:** Lightweight, serverless local database for tracking papers, domains, and embeddings.
+- **Local Embeddings:** Uses TF-IDF or `sentence-transformers` for offline semantic matching without any cloud dependencies.
+- **Pluggable AI Services:** Designed to work flawlessly without AI, but highly extensible to OpenAI, Anthropic, Groq, OpenRouter, or local LLMs.
+
+```text
+LiteratureManager/
+├── litmanager/
+│   ├── run.py                 # Application entry point
+│   ├── app/                   
+│   │   ├── app.py             # Flask routes and core logic
+│   │   ├── database.py        # SQLite schema & operations
+│   │   ├── pdf_processor.py   # PDF text & metadata extraction
+│   │   ├── embeddings.py      # Semantic search engine
+│   │   ├── ai_service.py      # AI integrations & prompts
+│   │   ├── templates/         # HTML Jinja templates
+│   │   └── static/css/        # UI Styling
+│   ├── migrate_folders.py     # Data migration tools
+│   └── flatten.py             # Folder structure utilities
+└── README.md
 ```
 
-> Why you have to build it yourself: PyInstaller doesn't cross-compile — a
-> Windows `.exe` has to be built *on* Windows. I've already test-built this
-> exact spec file (on Linux, producing a Linux binary) to confirm the
-> packaging config, template/static bundling, and database path handling
-> all work correctly when frozen — running `build_exe.bat` on your machine
-> just repeats that same verified process for a native Windows binary.
+---
 
-## Running without building an .exe at all
+## 🔒 Privacy & Cost Model
 
-```
-run_dev.bat
-```
+This project is deeply committed to the **local-first** philosophy. 
+- Browsing, tagging, offline semantic search, and reading PDFs are **100% free and offline**.
+- The only time an API call is made is during paper import (1 call) or when specifically using the "Reason across papers" chat feature. 
+- You can route these calls through a local **Ollama** server for a completely free and private experience.
 
-(or `python run.py` on macOS/Linux). Same app, just launched via Python
-directly — handy while you're still tweaking things.
+---
 
-## Upgrading search quality (optional)
+## 🛣️ Roadmap
 
-By default, offline search uses a zero-setup TF-IDF-style backend so the
-app works immediately with no download. For noticeably better "understands
-what I mean, not just matching words" search:
+- [ ] Automatic merging of near-duplicate domains.
+- [ ] Page/section-level full-text search capabilities.
+- [ ] Visual citation graphs for tracking paper relationships.
+- [ ] BibTeX / Zotero native export integrations.
 
-```
-python -m pip install sentence-transformers
-```
+---
 
-Re-run the app; it auto-detects the package and switches to real semantic
-embeddings (needs internet the first time only, to download the ~80MB
-model). No code changes or re-import needed for *new* papers; if you want
-existing papers re-embedded with the better model, re-import them or ask
-me for a small migration script.
-
-## Project layout
-
-```
-litmanager/
-├── run.py                 # entry point (dev + packaged .exe)
-├── litmanager.spec        # PyInstaller build config
-├── build_exe.bat          # one-click Windows build
-├── run_dev.bat            # one-click run without building
-├── requirements.txt
-├── app/
-│   ├── app.py              # Flask routes
-│   ├── database.py         # SQLite schema + queries
-│   ├── pdf_processor.py    # offline PDF metadata/text extraction
-│   ├── embeddings.py       # offline semantic search
-│   ├── ai_service.py       # optional, pluggable AI provider
-│   ├── templates/          # HTML pages
-│   └── static/css/         # styling
-└── library/                # created on first run: your PDFs + literature.db
-```
-
-## Cost model (matches section 22 of the spec)
-
-- Browsing, tagging, offline search, opening PDFs, daily recommendation:
-  **$0**, no internet needed.
-- Import with AI classification/summary on: **1 API call per paper**.
-- "Reason across papers": **1 API call per question**, scoped to only the
-  papers your offline search already found relevant — not your whole
-  library.
-
-## Known limitations of this MVP (things to sand down as you use it)
-
-- Metadata extraction (title/year/DOI/abstract) is heuristic/regex-based
-  for offline speed; odd PDF layouts occasionally need a manual fix — there's
-  no edit-metadata UI yet, so for now that means re-importing after a
-  page-layout tweak, or asking me to add an edit form.
-- New-domain proposals are auto-accepted rather than asking for confirmation
-  first (section 3 of the spec recommends a confirm step) — worth adding
-  once you see how often the AI actually proposes near-duplicate domains.
-- No backup/export tooling yet (section 27 mentions this as a requirement)
-  — the `library/` folder is plain SQLite + PDFs, so a normal file copy
-  works today, but there's no in-app "export/backup" button.
+*Built for researchers who want complete control over their library.*
