@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Literature{% endblock %} — Personal Library</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><span class="mark">&#9776;</span> Personal Literature</div>
+    <nav>
+      <a href="{{ url_for('index') }}" class="{{ 'active' if request.endpoint=='index' }}">Library</a>
+      <a href="{{ url_for('search') }}" class="{{ 'active' if request.endpoint=='search' }}">Search</a>
+      <a href="{{ url_for('today') }}" class="{{ 'active' if request.endpoint=='today' }}">Today's Paper</a>
+      <a href="{{ url_for('import_paper') }}" class="{{ 'active' if request.endpoint=='import_paper' }}">Import</a>
+      <a href="{{ url_for('settings') }}" class="{{ 'active' if request.endpoint=='settings' }}">Settings</a>
+    </nav>
+  </div>
+  {% block body %}{% endblock %}
+</body>
+</html>

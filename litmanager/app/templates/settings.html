@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block body %}
+<div class="main" style="max-width: 640px;">
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
+  {% endwith %}
+
+  <h1>Settings</h1>
+
+  <div class="panel">
+    <h3>Library</h3>
+    <div class="stat-row">
+      <div class="stat"><div class="num">{{ stats.total }}</div><div class="lbl">papers</div></div>
+      <div class="stat"><div class="num">{{ stats.domains }}</div><div class="lbl">domains</div></div>
+      <div class="stat"><div class="num">{{ stats.interesting }}</div><div class="lbl">interesting</div></div>
+    </div>
+    <p style="font-size: 13px; color: var(--ink-soft);">
+      Semantic search backend: <strong>{{ backend }}</strong>
+      {% if backend == 'hashing' %}
+        (offline TF-IDF-style fallback &mdash; install <code>sentence-transformers</code> for true semantic embeddings)
+      {% endif %}
+    </p>
+    <form method="post" action="{{ url_for('reembed') }}" style="margin-top: 10px;">
+      <button type="submit" class="btn secondary">Rebuild search index</button>
+      <p style="font-size: 12px; color: var(--ink-soft); margin-top: 6px;">
+        Run this once after installing or removing <code>sentence-transformers</code>, or if search
+        starts returning an error/empty results. It re-embeds every paper with the backend currently
+        active above, so all vectors are the same size and comparable again.
+      </p>
+    </form>
+  </div>
+
+  <div class="panel">
+    <h3>AI provider (optional)</h3>
+    <p style="font-size: 13px; color: var(--ink-soft); margin-bottom: 16px;">
+      Used only for: classifying/summarizing new papers on import, and "Reason across papers" search mode.
+      Everyday browsing and "Find papers" search never call this API. Leave everything blank to run fully offline for $0.
+    </p>
+    <div class="flash" style="background:#eef2ea; border-color:#cddbc3; color:#3c4a34;">
+      <strong>Free options:</strong> pick <em>OpenAI-compatible (local/free)</em> below and point it at:
+      <br>&bull; <strong>Ollama</strong> running on your own PC &mdash; 100% free, no key, no internet needed once the model is downloaded. Base URL: <code>http://localhost:11434/v1/chat/completions</code>, model e.g. <code>llama3</code>.
+      <br>&bull; <strong>Groq</strong> &mdash; free tier, cloud-hosted, fast. Base URL: <code>https://api.groq.com/openai/v1/chat/completions</code>, needs a free Groq API key.
+      <br>&bull; <strong>OpenRouter</strong> &mdash; some models are free. Base URL: <code>https://openrouter.ai/api/v1/chat/completions</code>, needs a free OpenRouter key, model e.g. <code>meta-llama/llama-3-8b-instruct:free</code>.
+    </div>
+    <form method="post">
+      <div class="field">
+        <label for="ai_provider">Provider</label>
+        <select name="ai_provider" id="ai_provider">
+          <option value="anthropic" {{ 'selected' if cfg.provider=='anthropic' }}>Anthropic (Claude) &mdash; paid</option>
+          <option value="openai" {{ 'selected' if cfg.provider=='openai' }}>OpenAI &mdash; paid</option>
+          <option value="openai_compatible" {{ 'selected' if cfg.provider=='openai_compatible' }}>OpenAI-compatible (local/free) &mdash; Ollama, Groq, OpenRouter, etc.</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="ai_base_url">Base URL <span style="font-weight:400;">(only needed for the OpenAI-compatible option above)</span></label>
+        <input type="text" name="ai_base_url" id="ai_base_url" value="{{ cfg.base_url or '' }}" placeholder="http://localhost:11434/v1/chat/completions">
+      </div>
+      <div class="field">
+        <label for="ai_model">Model</label>
+        <input type="text" name="ai_model" id="ai_model" value="{{ cfg.model }}" placeholder="claude-sonnet-4-6">
+      </div>
+      <div class="field">
+        <label for="ai_api_key">API key <span style="font-weight:400;">(leave blank for Ollama)</span></label>
+        <input type="password" name="ai_api_key" id="ai_api_key" value="{{ cfg.api_key or '' }}" placeholder="sk-...">
+      </div>
+      <button type="submit" class="btn">Save settings</button>
+    </form>
+  </div>
+
+  <div class="panel">
+    <h3>Batch Operations</h3>
+    <p style="font-size: 13px; color: var(--ink-soft); margin-bottom: 16px;">
+      If you previously imported papers without an AI key (or if the AI failed), they were marked as "Unclassified".
+      You can re-process all of them now if you have configured an AI provider above.
+    </p>
+    <form method="post" action="{{ url_for('reclassify_all') }}">
+      <button type="submit" class="btn secondary">Re-classify all 'Unclassified' papers</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

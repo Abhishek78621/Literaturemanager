@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Search{% endblock %}
+{% block body %}
+<div class="main" style="max-width: 820px;">
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
+  {% endwith %}
+
+  <h1>Search your library</h1>
+  <p style="color: var(--ink-soft); margin-bottom: 14px; font-size: 13.5px;">
+    "Find" runs fully offline, using local semantic search (backend: {{ backend }}) &mdash; no API call, no cost.
+    "Reason" also sends the top matches to your configured AI for comparison/synthesis.
+  </p>
+
+  <form method="post">
+    <div class="mode-toggle">
+      <button type="submit" name="mode" value="find" class="{{ 'active' if mode=='find' }}">Find papers (offline)</button>
+      <button type="submit" name="mode" value="reason" class="{{ 'active' if mode=='reason' }}">Reason across papers (AI)</button>
+    </div>
+    <div style="display:flex; gap: 10px;">
+      <input type="text" name="query" value="{{ query }}" placeholder="e.g. angle-only orbit determination using optical measurements" autofocus>
+      <input type="hidden" name="mode" id="mode-field" value="{{ mode }}">
+      <button type="submit" class="btn">Go</button>
+    </div>
+  </form>
+
+  {% if answer %}
+  <div class="answer-box" style="margin-top: 22px;">{{ answer }}</div>
+  {% endif %}
+
+  {% if results %}
+    <div style="margin-top: 22px;">
+    {% for p in results %}
+      <div class="paper-row">
+        <div>
+          <div class="title"><a href="{{ url_for('paper_detail', paper_id=p.id) }}">{{ p.title }}</a></div>
+          <div class="meta">{{ p.authors or 'Unknown authors' }}{% if p.year %} &middot; {{ p.year }}{% endif %}</div>
+          <div class="tags">
+            {% if p.primary_domain %}<span class="badge domain">{{ p.primary_domain }}</span>{% endif %}
+          </div>
+        </div>
+        {% if p.relevance is defined %}
+        <div class="relevance">{{ p.relevance }}% match</div>
+        {% endif %}
+      </div>
+    {% endfor %}
+    </div>
+  {% elif query %}
+    <div class="empty" style="margin-top: 22px;">No matching papers found.</div>
+  {% endif %}
+</div>
+
+<script>
+document.querySelectorAll('.mode-toggle button').forEach(btn => {
+  btn.addEventListener('click', () => { document.getElementById('mode-field').value = btn.value; });
+});
+</script>
+{% endblock %}

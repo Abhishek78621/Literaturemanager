@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Today's Paper{% endblock %}
+{% block body %}
+<div class="main" style="max-width: 700px; margin: 60px auto; text-align: center;">
+  <p style="color: var(--ink-soft); font-size: 13px; letter-spacing: .02em;">Today's paper</p>
+  {% if paper %}
+    <h1 style="font-size: 28px; margin-bottom: 10px;">{{ paper.title }}</h1>
+    <p style="color: var(--ink-soft); margin-bottom: 20px;">{{ paper.authors or 'Unknown authors' }}{% if paper.year %} &middot; {{ paper.year }}{% endif %}</p>
+    {% if reason %}<p style="font-style: italic; color: var(--ink-soft); margin-bottom: 24px;">{{ reason }}</p>{% endif %}
+    {% if paper.simple_explanation %}
+      <div class="panel" style="text-align: left;">
+        <h3>What it's about</h3>
+        <p>{{ paper.simple_explanation }}</p>
+      </div>
+    {% endif %}
+    <a href="{{ url_for('paper_detail', paper_id=paper.id) }}" class="btn" style="margin-top: 10px;">View paper</a>
+  {% else %}
+    <div class="empty">Your library is empty. <a href="{{ url_for('import_paper') }}">Import a paper</a> to get started.</div>
+  {% endif %}
+</div>
+{% endblock %}

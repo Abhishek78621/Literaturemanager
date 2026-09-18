@@ -1,0 +1,11 @@
+flask>=3.0
+PyMuPDF>=1.24
+scikit-learn>=1.4
+numpy>=1.26
+anthropic>=0.34
+requests>=2.31
+
+# Optional (recommended) upgrade for true semantic embeddings instead of the
+# offline TF-IDF fallback. Needs internet the first time to download the
+# model (~80MB); after that it works fully offline.
+# sentence-transformers>=2.7

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Library{% endblock %}
+{% block body %}
+<div class="layout">
+  <div class="sidebar">
+    <h3>Library</h3>
+    <ul>
+      <li><a href="{{ url_for('index') }}" class="{{ 'active' if not active_domain and not active_filter }}">All papers <span class="count">{{ stats.total }}</span></a></li>
+      <li><a href="{{ url_for('index', filter='interesting') }}" class="{{ 'active' if active_filter=='interesting' }}">Interesting <span class="count">{{ stats.interesting }}</span></a></li>
+      <li><a href="{{ url_for('index', filter='unread') }}" class="{{ 'active' if active_filter=='unread' }}">Unread <span class="count">{{ stats.unread }}</span></a></li>
+      {% set unclassified_domain = namespace(value=none) %}
+      {% for d in domains %}
+        {% if d.name == 'Unclassified' %}
+          {% set unclassified_domain.value = d %}
+        {% endif %}
+      {% endfor %}
+      {% if unclassified_domain.value %}
+      <li><a href="{{ url_for('index', domain='Unclassified') }}" class="{{ 'active' if active_domain=='Unclassified' }}">Unclassified <span class="count">{{ unclassified_domain.value.paper_count }}</span></a></li>
+      {% endif %}
+    </ul>
+    {% macro render_tree(tree_dict) %}
+      <ul style="padding-left: 0; margin-bottom: 0;">
+        {% for name, node in tree_dict.items() %}
+          <li>
+            {% if node.subdomains %}
+              <details class="domain-details" {% if active_path and active_path.startswith(node.path) %}open{% endif %}>
+                <summary class="domain-summary">
+                  <a href="{{ url_for('index', path=node.path) }}" class="{{ 'active' if active_path==node.path }}">{{ name }} <span class="count">{{ node.count }}</span></a>
+                </summary>
+                <div class="domain-children">
+                  {{ render_tree(node.subdomains) }}
+                </div>
+              </details>
+            {% else %}
+              <div class="domain-leaf">
+                <a href="{{ url_for('index', path=node.path) }}" class="{{ 'active' if active_path==node.path }}">{{ name }} <span class="count">{{ node.count }}</span></a>
+              </div>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% endmacro %}
+
+    {% if library_tree %}
+      {% for doc_type, domains_tree in library_tree.items() %}
+        <h3>{{ doc_type }}</h3>
+        {{ render_tree(domains_tree) }}
+      {% endfor %}
+    {% else %}
+      <h3>Domains</h3>
+      <ul><li style="color: var(--ink-soft); font-size: 13px;">No domains yet</li></ul>
+    {% endif %}
+  </div>
+
+  <div class="main">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
+    {% endwith %}
+
+    <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 18px;">
+      <h1>{{ active_domain or (active_filter and active_filter|capitalize) or 'All papers' }}</h1>
+      <a href="{{ url_for('import_paper') }}" class="btn">+ Import paper</a>
+    </div>
+
+    {% if papers %}
+      {% for p in papers %}
+      <div class="paper-row">
+        <div>
+          <div class="title"><a href="{{ url_for('paper_detail', paper_id=p.id) }}">{{ p.title }}</a></div>
+          <div class="meta">{{ p.authors or 'Unknown authors' }}{% if p.year %} &middot; {{ p.year }}{% endif %}</div>
+          <div class="tags">
+            {% if p.primary_domain %}<span class="badge domain">{{ p.primary_domain }}</span>{% endif %}
+            {% if p.interesting %}<span class="badge interesting">Interesting</span>{% endif %}
+            {% if not p.read %}<span class="badge">Unread</span>{% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty">
+        No papers here yet.<br><br>
+        <a href="{{ url_for('import_paper') }}" class="btn">Import your first paper</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

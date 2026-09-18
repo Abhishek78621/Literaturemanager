@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Import{% endblock %}
+{% block body %}
+<div class="main" style="max-width: 640px; margin: 40px auto;">
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
+  {% endwith %}
+
+  <h1>Import a paper</h1>
+  <p style="color: var(--ink-soft); margin-bottom: 20px;">
+    Drop a PDF below. Title, authors, and abstract are extracted locally.
+    {% if ai_configured %}
+      The paper will also be classified into a domain and summarized automatically.
+    {% else %}
+      AI classification is off &mdash; <a href="{{ url_for('settings') }}">add an API key in Settings</a> to enable automatic domain/summary generation. The paper will still be stored and offline-searchable.
+    {% endif %}
+  </p>
+
+  <form method="post" enctype="multipart/form-data" id="import-form">
+    <label class="dropzone" id="dropzone" for="pdf_file">
+      <div id="dz-label">Drag a PDF here, or click to choose a file</div>
+      <input type="file" name="pdf_file" id="pdf_file" accept="application/pdf" required>
+    </label>
+    <div style="margin-top: 18px; text-align: right;">
+      <button type="submit" class="btn" id="submit-btn">Import</button>
+    </div>
+  </form>
+</div>
+
+<script>
+const dz = document.getElementById('dropzone');
+const input = document.getElementById('pdf_file');
+const label = document.getElementById('dz-label');
+const form = document.getElementById('import-form');
+const submitBtn = document.getElementById('submit-btn');
+
+['dragenter','dragover'].forEach(evt => dz.addEventListener(evt, e => {
+  e.preventDefault(); dz.classList.add('dragover');
+}));
+['dragleave','drop'].forEach(evt => dz.addEventListener(evt, e => {
+  e.preventDefault(); dz.classList.remove('dragover');
+}));
+dz.addEventListener('drop', e => {
+  const files = e.dataTransfer.files;
+  if (files.length) { input.files = files; updateLabel(); }
+});
+input.addEventListener('change', updateLabel);
+function updateLabel() {
+  if (input.files.length) label.textContent = input.files[0].name;
+}
+form.addEventListener('submit', () => {
+  submitBtn.textContent = 'Processing…';
+  submitBtn.disabled = true;
+});
+</script>
+{% endblock %}
