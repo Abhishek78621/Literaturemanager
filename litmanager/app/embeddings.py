@@ -40,7 +40,17 @@ def _init_backend():
     if _BACKEND_CHOICE in ("auto", "sentence_transformers"):
         try:
             from sentence_transformers import SentenceTransformer
-            _model = SentenceTransformer("all-MiniLM-L6-v2")
+            import sys
+            import os
+            model_name = "all-MiniLM-L6-v2"
+            
+            if getattr(sys, "frozen", False):
+                # When packaged as an EXE, load the bundled offline model
+                bundled_path = os.path.join(sys._MEIPASS, "models", model_name)
+                _model = SentenceTransformer(bundled_path, local_files_only=True)
+            else:
+                _model = SentenceTransformer(model_name)
+                
             _backend_name = "sentence_transformers"
             return
         except Exception:

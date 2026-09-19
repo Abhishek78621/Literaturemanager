@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Search{% endblock %}
 {% block body %}
-<div class="main" style="max-width: 820px;">
+<div class="main" style="max-width: 820px; margin: 0 auto;">
   {% with messages = get_flashed_messages() %}
     {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
   {% endwith %}
@@ -25,7 +25,14 @@
   </form>
 
   {% if answer %}
-  <div class="answer-box" style="margin-top: 22px;">{{ answer }}</div>
+  <div class="answer-box" id="ai-answer-box" style="margin-top: 22px;">{{ answer }}</div>
+  <script src="{{ url_for('static', filename='marked.min.js') }}"></script>
+  <script>
+    const answerBox = document.getElementById('ai-answer-box');
+    // Parse the markdown content (it's inserted as raw text, so we decode it)
+    let rawText = answerBox.textContent || answerBox.innerText;
+    answerBox.innerHTML = marked.parse(rawText);
+  </script>
   {% endif %}
 
   {% if results %}

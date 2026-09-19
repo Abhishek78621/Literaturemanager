@@ -112,6 +112,13 @@ def mark_read(paper_id):
     return redirect(request.referrer or url_for("paper_detail", paper_id=paper_id))
 
 
+@app.route("/paper/<int:paper_id>/delete", methods=["POST"])
+def delete_paper(paper_id):
+    if db.delete_paper(paper_id):
+        flash("Paper successfully deleted.")
+        return redirect(url_for("index"))
+    return "Paper not found", 404
+
 @app.route("/paper/<int:paper_id>/reclassify", methods=["POST"])
 def reclassify_paper(paper_id):
     if not ai_service.is_configured():
@@ -314,7 +321,7 @@ def search():
 
     return render_template("search.html", results=results, answer=answer, query=query,
                             mode=mode, ai_configured=ai_service.is_configured(),
-                            backend=embeddings.backend_name())
+                            backend=embeddings.backend_name_lazy())
 
 
 # ---------------- Daily recommendation ----------------

@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% block title %}{{ paper.title }}{% endblock %}
 {% block body %}
-<div class="main" style="max-width: 900px;">
-  <a href="{{ url_for('index') }}" class="btn ghost" style="margin-bottom:16px; display:inline-block;">&larr; Back to library</a>
+<div class="main" style="max-width: 900px; margin: 0 auto;">
+  <a href="{{ url_for('index') }}" class="btn ghost" style="margin-bottom:16px; display:inline-block;">&larr; Back to
+    library</a>
 
   <div class="detail-grid">
     <div>
@@ -38,11 +39,19 @@
     <div>
       <div class="panel">
         <h3>Actions</h3>
-        <a href="{{ url_for('paper_pdf', paper_id=paper.id) }}" target="_blank" class="btn" style="width:100%; text-align:center; display:block; margin-bottom:10px;">Open PDF</a>
+        <a href="{{ url_for('paper_pdf', paper_id=paper.id) }}" target="_blank" class="btn"
+          style="width:100%; text-align:center; display:block; margin-bottom:10px;">Open PDF</a>
         <form method="post" action="{{ url_for('set_interesting', paper_id=paper.id) }}" style="margin-bottom:8px;">
           <input type="hidden" name="value" value="{{ 0 if paper.interesting else 1 }}">
           <button type="submit" class="btn secondary" style="width:100%;">
             {{ 'Remove from Interesting' if paper.interesting else 'Mark as Interesting' }}
+          </button>
+        </form>
+        <form method="POST" action="{{ url_for('delete_paper', paper_id=paper.id) }}"
+          onsubmit="return confirm('Are you sure you want to permanently delete this paper? This will delete the database record and the actual PDF file from your disk. This action cannot be undone.');"
+          style="margin-bottom:8px;">
+          <button type="submit" class="btn secondary" style="width:100%;">
+            Delete Paper
           </button>
         </form>
         {% if not paper.read %}
@@ -51,7 +60,9 @@
         </form>
         {% endif %}
         <form method="post" action="{{ url_for('reclassify_paper', paper_id=paper.id) }}">
-          <button type="submit" class="btn secondary" style="width:100%;" title="Use AI to re-read and classify this paper (e.g. if it is currently 'Unclassified')">Re-classify with AI</button>
+          <button type="submit" class="btn secondary" style="width:100%;"
+            title="Use AI to re-read and classify this paper (e.g. if it is currently 'Unclassified')">Re-classify with
+            AI</button>
         </form>
       </div>
 

@@ -273,6 +273,37 @@ def get_paper(paper_id):
         ]
         return paper
 
+def delete_paper(paper_id):
+    """Deletes a paper from the database and removes its PDF file from disk."""
+    paper = get_paper(paper_id)
+    if not paper:
+        return False
+        
+    with get_conn() as conn:
+        # SQLite foreign keys with ON DELETE CASCADE will clean up 
+        # paper_domains, paper_tags, and embeddings automatically
+        conn.execute("DELETE FROM papers WHERE id = ?", (paper_id,))
+        
+    # Delete the physical file
+    pdf_path = paper.get("pdf_path")
+    if pdf_path and os.path.exists(pdf_path):
+        try:
+            os.remove(pdf_path)
+            # Try to cleanup empty parent directories
+            dir_path = os.path.dirname(pdf_path)
+            # Prevent deleting the root LIBRARY_DIR or going beyond it
+            library_dir = os.path.join(_BASE_DIR, "library")
+            while dir_path and dir_path != library_dir and len(dir_path) > len(library_dir):
+                try:
+                    os.rmdir(dir_path)
+                    dir_path = os.path.dirname(dir_path)
+                except OSError:
+                    break # Directory not empty, stop deleting upwards
+        except Exception as e:
+            print(f"Error deleting file {pdf_path}: {e}")
+            
+    return True
+
 
 def list_papers(domain=None, path_prefix=None, interesting_only=False, unread_only=False):
     query = "SELECT DISTINCT p.* FROM papers p"
