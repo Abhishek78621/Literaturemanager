@@ -16,16 +16,31 @@ if errorlevel 1 (
 echo Installing dependencies...
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
-python -m pip install pyinstaller
+python -m pip install pyinstaller pyarmor
+
+echo.
+echo Obfuscating code with PyArmor...
+REM Generate obfuscated code for the 'app' module
+pyarmor gen -O obfuscated app
+if not exist "obfuscated\app" (
+    echo PyArmor obfuscation failed.
+    pause
+    exit /b 1
+)
+
+REM Swap the original app folder with the obfuscated one for the build
+move app app_original >nul
+move obfuscated\app app >nul
 
 echo.
 echo Building the executable (this can take a few minutes the first time)...
-REM Using "python -m PyInstaller" instead of the bare "pyinstaller" command:
-REM pip sometimes installs console scripts into a Scripts folder that isn't
-REM on PATH (you'll see a warning about this above if it happened). Calling
-REM it as a module sidesteps that entirely, since Python always knows where
-REM its own installed packages are.
 python -m PyInstaller litmanager.spec --noconfirm
+
+REM Restore the original source code
+rmdir /S /Q app
+move app_original app >nul
+rmdir /S /Q obfuscated
+
 
 echo.
 if exist "dist\LiteratureManager.exe" (

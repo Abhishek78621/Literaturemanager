@@ -34,10 +34,16 @@ def open_browser():
 
 
 def main():
+    daemon_mode = "--daemon" in sys.argv
     create_app()
-    threading.Thread(target=open_browser, daemon=True).start()
+    if not daemon_mode:
+        threading.Thread(target=open_browser, daemon=True).start()
     print(f"Personal Literature Manager running at http://{HOST}:{PORT}")
+    if daemon_mode:
+        print("Running in background daemon mode.")
     print("Close this window (or press Ctrl+C) to stop the app.")
+    
+    # We must run debug=False or else it spawns a reloader process which can break sys.argv forwarding
     app.run(host=HOST, port=PORT, debug=False)
 
 

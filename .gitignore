@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+
+# Local Database and PDFs
+library/
+*.db
+
+# Build artifacts and PyInstaller
+build/
+dist/
+*.spec
+
+# Machine Learning Models
+models/

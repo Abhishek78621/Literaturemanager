@@ -6,51 +6,208 @@
     {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
   {% endwith %}
 
-  <h1>Import a paper</h1>
+  <h1>Import Papers</h1>
   <p style="color: var(--ink-soft); margin-bottom: 20px;">
-    Drop a PDF below. Title, authors, and abstract are extracted locally.
-    {% if ai_configured %}
-      The paper will also be classified into a domain and summarized automatically.
-    {% else %}
-      AI classification is off &mdash; <a href="{{ url_for('settings') }}">add an API key in Settings</a> to enable automatic domain/summary generation. The paper will still be stored and offline-searchable.
+    Drop PDFs or folders below. Title, authors, and abstract are extracted locally.
+    {% if not ai_configured %}
+      <br>AI classification is off &mdash; <a href="{{ url_for('settings') }}">add an API key in Settings</a> to enable automatic domain/summary generation.
     {% endif %}
   </p>
 
-  <form method="post" enctype="multipart/form-data" id="import-form">
-    <label class="dropzone" id="dropzone" for="pdf_file">
-      <div id="dz-label">Drag a PDF here, or click to choose a file</div>
-      <input type="file" name="pdf_file" id="pdf_file" accept="application/pdf" required>
-    </label>
-    <div style="margin-top: 18px; text-align: right;">
-      <button type="submit" class="btn" id="submit-btn">Import</button>
+  <div style="margin-bottom: 20px;">
+    <label style="display: block; font-weight: 500; margin-bottom: 8px;">Organization Mode</label>
+    <div style="margin-bottom: 8px;">
+      <label style="display: flex; align-items: center; cursor: pointer;">
+        <input type="radio" name="organization_mode" value="preserve" checked style="margin-right: 8px;">
+        Preserve existing folder structure as domains
+      </label>
     </div>
-  </form>
+    <div>
+      <label style="display: flex; align-items: center; cursor: pointer;">
+        <input type="radio" name="organization_mode" value="ai" style="margin-right: 8px;">
+        Auto-organize with AI classification (Slower)
+      </label>
+    </div>
+  </div>
+
+  <div class="dropzone" id="dropzone" style="cursor: default; padding: 40px 20px; text-align: center;">
+    <div id="dz-label" style="margin-bottom: 20px; pointer-events: none;">Drag PDFs or folders here</div>
+    <div style="display: flex; gap: 15px; justify-content: center;">
+      <!-- Hidden file inputs -->
+      <input type="file" id="file_input" multiple accept="application/pdf" style="display: none;">
+      <input type="file" id="folder_input" webkitdirectory directory multiple accept="application/pdf" style="display: none;">
+      
+      <button type="button" class="btn secondary" onclick="document.getElementById('file_input').click()">Select Files</button>
+      <button type="button" class="btn secondary" onclick="document.getElementById('folder_input').click()">Select Folder</button>
+    </div>
+  </div>
+
+  <div style="margin-top: 18px; text-align: right;">
+    <button type="button" class="btn" id="start-import-btn" style="display: none;">Import 0 items</button>
+  </div>
+
+  <div id="progress-container" style="display: none; margin-top: 20px; padding: 15px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface);">
+    <h3 style="margin-top: 0; margin-bottom: 10px; font-size: 1rem;">Import Progress</h3>
+    <div id="progress-text" style="font-family: monospace; font-size: 0.9rem; white-space: pre-wrap; max-height: 200px; overflow-y: auto; color: var(--ink-soft);"></div>
+  </div>
 </div>
 
 <script>
-const dz = document.getElementById('dropzone');
-const input = document.getElementById('pdf_file');
-const label = document.getElementById('dz-label');
-const form = document.getElementById('import-form');
-const submitBtn = document.getElementById('submit-btn');
+let filesToUpload = [];
 
-['dragenter','dragover'].forEach(evt => dz.addEventListener(evt, e => {
+const dz = document.getElementById('dropzone');
+const fileInput = document.getElementById('file_input');
+const folderInput = document.getElementById('folder_input');
+const startBtn = document.getElementById('start-import-btn');
+const progressContainer = document.getElementById('progress-container');
+const progressText = document.getElementById('progress-text');
+
+// Handle drag and drop
+['dragenter', 'dragover'].forEach(evt => dz.addEventListener(evt, e => {
   e.preventDefault(); dz.classList.add('dragover');
 }));
-['dragleave','drop'].forEach(evt => dz.addEventListener(evt, e => {
+['dragleave', 'drop'].forEach(evt => dz.addEventListener(evt, e => {
   e.preventDefault(); dz.classList.remove('dragover');
 }));
-dz.addEventListener('drop', e => {
-  const files = e.dataTransfer.files;
-  if (files.length) { input.files = files; updateLabel(); }
-});
-input.addEventListener('change', updateLabel);
-function updateLabel() {
-  if (input.files.length) label.textContent = input.files[0].name;
+
+async function getFilesFromDataTransfer(items) {
+  let files = [];
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    if (item.kind === 'file') {
+      const entry = item.webkitGetAsEntry();
+      if (entry) {
+        if (entry.isFile) {
+          const file = item.getAsFile();
+          if (file.name.toLowerCase().endsWith('.pdf')) files.push(file);
+        } else if (entry.isDirectory) {
+          files = files.concat(await readDirectory(entry));
+        }
+      }
+    }
+  }
+  return files;
 }
-form.addEventListener('submit', () => {
-  submitBtn.textContent = 'Processing…';
-  submitBtn.disabled = true;
+
+function readDirectory(directoryEntry) {
+  return new Promise((resolve) => {
+    const dirReader = directoryEntry.createReader();
+    let entries = [];
+    
+    const readEntries = () => {
+      dirReader.readEntries(async (results) => {
+        if (!results.length) {
+          let files = [];
+          for (let entry of entries) {
+            if (entry.isFile) {
+              const file = await new Promise(res => entry.file(res));
+              if (file.name.toLowerCase().endsWith('.pdf')) {
+                // Object.defineProperty to override webkitRelativePath is tricky, 
+                // so we attach a custom property
+                file.customRelativePath = entry.fullPath.substring(1); 
+                files.push(file);
+              }
+            } else if (entry.isDirectory) {
+              files = files.concat(await readDirectory(entry));
+            }
+          }
+          resolve(files);
+        } else {
+          entries = entries.concat(Array.from(results));
+          readEntries();
+        }
+      });
+    };
+    readEntries();
+  });
+}
+
+dz.addEventListener('drop', async e => {
+  const items = e.dataTransfer.items;
+  if (items) {
+    const newFiles = await getFilesFromDataTransfer(items);
+    addFiles(newFiles);
+  }
+});
+
+fileInput.addEventListener('change', () => {
+  addFiles(Array.from(fileInput.files).filter(f => f.name.toLowerCase().endsWith('.pdf')));
+});
+
+folderInput.addEventListener('change', () => {
+  addFiles(Array.from(folderInput.files).filter(f => f.name.toLowerCase().endsWith('.pdf')));
+});
+
+function addFiles(newFiles) {
+  filesToUpload = filesToUpload.concat(newFiles);
+  if (filesToUpload.length > 0) {
+    startBtn.style.display = 'inline-block';
+    startBtn.textContent = `Import ${filesToUpload.length} file${filesToUpload.length > 1 ? 's' : ''}`;
+  }
+}
+
+function log(msg) {
+  progressText.innerHTML += msg + '\n';
+  progressText.scrollTop = progressText.scrollHeight;
+}
+
+startBtn.addEventListener('click', async () => {
+  if (filesToUpload.length === 0) return;
+  
+  startBtn.disabled = true;
+  startBtn.textContent = 'Importing...';
+  progressContainer.style.display = 'block';
+  progressText.innerHTML = '';
+  
+  const mode = document.querySelector('input[name="organization_mode"]:checked').value;
+  
+  let successCount = 0;
+  let skippedCount = 0;
+  let failCount = 0;
+
+  for (let i = 0; i < filesToUpload.length; i++) {
+    const file = filesToUpload[i];
+    const path = file.customRelativePath || file.webkitRelativePath || file.name;
+    
+    log(`[${i+1}/${filesToUpload.length}] Uploading ${path}...`);
+    
+    const formData = new FormData();
+    formData.append('pdf_file', file);
+    formData.append('relative_path', path);
+    formData.append('organization_mode', mode);
+    
+    try {
+      const response = await fetch('/api/upload_paper', {
+        method: 'POST',
+        body: formData
+      });
+      
+      const data = await response.json();
+      if (response.ok) {
+        if (data.status === 'skipped') {
+          skippedCount++;
+          log(`  -> Skipped: ${data.message}`);
+        } else {
+          successCount++;
+          log(`  -> Success: ${data.message}`);
+        }
+      } else {
+        failCount++;
+        log(`  -> Error: ${data.error || 'Unknown error'}`);
+      }
+    } catch (e) {
+      failCount++;
+      log(`  -> Failed to upload: ${e.message}`);
+    }
+  }
+  
+  log(`\nDone! Imported: ${successCount}, Skipped: ${skippedCount}, Failed: ${failCount}`);
+  filesToUpload = [];
+  startBtn.textContent = 'Completed';
+  
+  // reset inputs
+  fileInput.value = '';
+  folderInput.value = '';
 });
 </script>
 {% endblock %}

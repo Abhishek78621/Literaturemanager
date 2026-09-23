@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Welcome to LiteratureManager{% endblock %}
+{% block body %}
+<div class="main" style="max-width: 640px; margin: 0 auto; text-align: center; margin-top: 50px;">
+  <h1>Welcome to Personal Literature Manager</h1>
+  <p style="color: var(--ink-soft); margin-bottom: 30px;">
+    To get started, please specify the root folder where your PDFs are stored.
+  </p>
+
+  <div class="panel" style="text-align: left;">
+    <form method="post">
+      <div class="field">
+        <label for="literature_root_path">Literature Root Folder Path</label>
+        <input type="text" name="literature_root_path" id="literature_root_path" required placeholder="e.g., C:\Users\Name\Documents\Literature">
+        <p style="font-size: 12px; color: var(--ink-soft); margin-top: 6px;">
+          We will automatically scan this folder. Any existing subfolders will be registered as your Domains.
+        </p>
+      </div>
+      <button type="submit" class="btn" style="width: 100%; margin-top: 20px;">Complete Setup</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

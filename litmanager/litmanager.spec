@@ -45,7 +45,7 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=False,
-    console=True,  # keep a console window so the user can see the server URL/logs;
+    console=False,  # keep a console window so the user can see the server URL/logs;
                    # set to False for a fully silent background app once you trust it
     disable_windowed_traceback=False,
     target_arch=None,

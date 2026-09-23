@@ -71,7 +71,8 @@ def init_db():
                 date_added TEXT,
                 date_read TEXT,
                 open_count INTEGER DEFAULT 0,
-                document_type TEXT DEFAULT 'Research_Papers'
+                document_type TEXT DEFAULT 'Research_Papers',
+                sha256 TEXT
             );
 
             CREATE TABLE IF NOT EXISTS domains (
@@ -120,6 +121,13 @@ def init_db():
             );
             """
         )
+        try:
+            conn.execute("ALTER TABLE papers ADD COLUMN sha256 TEXT")
+        except sqlite3.OperationalError:
+            pass
+            
+        conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_papers_sha256 ON papers(sha256);")
+
 
 
 # ---------- Domains ----------
@@ -173,8 +181,8 @@ def add_paper(meta, pdf_path):
             """INSERT INTO papers
                (title, authors, year, journal, doi, abstract, technical_summary,
                 simple_explanation, keywords, pdf_path, primary_domain,
-                interesting, read, date_added, document_type)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                interesting, read, date_added, document_type, sha256)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 meta.get("title"), meta.get("authors"), meta.get("year"),
                 meta.get("journal"), meta.get("doi"), meta.get("abstract"),
@@ -182,6 +190,7 @@ def add_paper(meta, pdf_path):
                 meta.get("keywords"), pdf_path, meta.get("primary_domain"),
                 int(meta.get("interesting", False)), 0,
                 datetime.utcnow().isoformat(), meta.get("document_type", "Research_Papers"),
+                meta.get("sha256"),
             ),
         )
         paper_id = cur.lastrowid
@@ -273,6 +282,15 @@ def get_paper(paper_id):
         ]
         return paper
 
+def get_paper_by_hash(sha256_hash):
+    if not sha256_hash:
+        return None
+    with get_conn() as conn:
+        row = conn.execute("SELECT id FROM papers WHERE sha256 = ?", (sha256_hash,)).fetchone()
+        if not row:
+            return None
+        return get_paper(row["id"])
+
 def delete_paper(paper_id):
     """Deletes a paper from the database and removes its PDF file from disk."""
     paper = get_paper(paper_id)
@@ -304,6 +322,15 @@ def delete_paper(paper_id):
             
     return True
 
+
+def cleanup_empty_domains():
+    """Removes domains that are not 'Unclassified' and have no papers associated with them."""
+    with get_conn() as conn:
+        conn.execute('''
+            DELETE FROM domains 
+            WHERE name != 'Unclassified' 
+            AND id NOT IN (SELECT DISTINCT domain_id FROM paper_domains)
+        ''')
 
 def list_papers(domain=None, path_prefix=None, interesting_only=False, unread_only=False):
     query = "SELECT DISTINCT p.* FROM papers p"
@@ -384,3 +411,17 @@ def stats():
         unread = conn.execute("SELECT COUNT(*) c FROM papers WHERE read=0").fetchone()["c"]
         domains = conn.execute("SELECT COUNT(*) c FROM domains").fetchone()["c"]
         return {"total": total, "interesting": interesting, "unread": unread, "domains": domains}
+
+
+def sync_domains_from_folders(root_path):
+    """
+    Scans the immediate subdirectories of root_path and registers them as domains.
+    Leaves existing domains untouched.
+    """
+    if not os.path.isdir(root_path):
+        return
+        
+    for entry in os.listdir(root_path):
+        full_path = os.path.join(root_path, entry)
+        if os.path.isdir(full_path):
+            _ensure_domain(entry)

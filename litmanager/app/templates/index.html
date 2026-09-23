@@ -63,19 +63,55 @@
     </div>
 
     {% if papers %}
-      {% for p in papers %}
-      <div class="paper-row">
-        <div>
-          <div class="title"><a href="{{ url_for('paper_detail', paper_id=p.id) }}">{{ p.title }}</a></div>
-          <div class="meta">{{ p.authors or 'Unknown authors' }}{% if p.year %} &middot; {{ p.year }}{% endif %}</div>
-          <div class="tags">
-            {% if p.primary_domain %}<span class="badge domain">{{ p.primary_domain }}</span>{% endif %}
-            {% if p.interesting %}<span class="badge interesting">Interesting</span>{% endif %}
-            {% if not p.read %}<span class="badge">Unread</span>{% endif %}
+      <form method="post" action="{{ url_for('delete_multiple_papers') }}" id="bulk-action-form">
+        <div style="margin-bottom: 12px; display: flex; gap: 12px; align-items: center; padding: 0 16px;">
+          <input type="checkbox" id="select-all" title="Select all papers on this page">
+          <label for="select-all" style="font-size: 13px; color: var(--ink-soft); cursor: pointer;">Select All</label>
+          <button type="submit" id="delete-selected-btn" class="btn secondary" style="display: none; padding: 4px 12px; font-size: 12px; color: #d32f2f; border-color: #f5c6c6;" onclick="return confirm('Are you sure you want to permanently delete all selected papers?');">
+            Delete Selected
+          </button>
+        </div>
+
+        {% for p in papers %}
+        <div class="paper-row" style="display: flex; gap: 16px; align-items: flex-start;">
+          <input type="checkbox" name="paper_ids" value="{{ p.id }}" class="paper-checkbox" style="margin-top: 6px;">
+          <div style="flex: 1;">
+            <div class="title"><a href="{{ url_for('paper_detail', paper_id=p.id) }}">{{ p.title }}</a></div>
+            <div class="meta">{{ p.authors or 'Unknown authors' }}{% if p.year %} &middot; {{ p.year }}{% endif %}</div>
+            <div class="tags">
+              {% if p.primary_domain %}<span class="badge domain">{{ p.primary_domain }}</span>{% endif %}
+              {% if p.interesting %}<span class="badge interesting">Interesting</span>{% endif %}
+              {% if not p.read %}<span class="badge">Unread</span>{% endif %}
+            </div>
           </div>
         </div>
-      </div>
-      {% endfor %}
+        {% endfor %}
+      </form>
+
+      <script>
+        const selectAllCheckbox = document.getElementById('select-all');
+        const paperCheckboxes = document.querySelectorAll('.paper-checkbox');
+        const deleteBtn = document.getElementById('delete-selected-btn');
+
+        function updateDeleteBtn() {
+            const anyChecked = Array.from(paperCheckboxes).some(cb => cb.checked);
+            deleteBtn.style.display = anyChecked ? 'inline-block' : 'none';
+        }
+
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function() {
+                paperCheckboxes.forEach(cb => cb.checked = this.checked);
+                updateDeleteBtn();
+            });
+
+            paperCheckboxes.forEach(cb => {
+                cb.addEventListener('change', function() {
+                    if (!this.checked) selectAllCheckbox.checked = false;
+                    updateDeleteBtn();
+                });
+            });
+        }
+      </script>
     {% else %}
       <div class="empty">
         No papers here yet.<br><br>

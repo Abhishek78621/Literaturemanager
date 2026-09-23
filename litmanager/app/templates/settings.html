@@ -32,18 +32,47 @@
   </div>
 
   <div class="panel">
-    <h3>AI provider (optional)</h3>
-    <p style="font-size: 13px; color: var(--ink-soft); margin-bottom: 16px;">
-      Used only for: classifying/summarizing new papers on import, and "Reason across papers" search mode.
-      Everyday browsing and "Find papers" search never call this API. Leave everything blank to run fully offline for $0.
-    </p>
-    <div class="flash" style="background:#eef2ea; border-color:#cddbc3; color:#3c4a34;">
-      <strong>Free options:</strong> pick <em>OpenAI-compatible (local/free)</em> below and point it at:
-      <br>&bull; <strong>Ollama</strong> running on your own PC &mdash; 100% free, no key, no internet needed once the model is downloaded. Base URL: <code>http://localhost:11434/v1/chat/completions</code>, model e.g. <code>llama3</code>.
-      <br>&bull; <strong>Groq</strong> &mdash; free tier, cloud-hosted, fast. Base URL: <code>https://api.groq.com/openai/v1/chat/completions</code>, needs a free Groq API key.
-      <br>&bull; <strong>OpenRouter</strong> &mdash; some models are free. Base URL: <code>https://openrouter.ai/api/v1/chat/completions</code>, needs a free OpenRouter key, model e.g. <code>meta-llama/llama-3-8b-instruct:free</code>.
-    </div>
+    <h3>General Settings</h3>
     <form method="post">
+      
+      <h4 style="margin-top: 20px; margin-bottom: 10px;">Storage</h4>
+      <div class="field">
+        <label for="literature_root_path">Literature Root Folder Path</label>
+        <input type="text" name="literature_root_path" id="literature_root_path" value="{{ literature_root_path }}" placeholder="e.g., C:\Users\Name\Literature">
+        <p style="font-size: 12px; color: var(--ink-soft); margin-top: 6px;">
+          This is where your PDFs and their category folders are stored. Note: changing this won't automatically move existing PDFs.
+        </p>
+      </div>
+
+      <h4 style="margin-top: 20px; margin-bottom: 10px;">Scheduled Auto-Scan</h4>
+      <div class="field" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+        <input type="checkbox" name="auto_scan_enabled" id="auto_scan_enabled" value="1" {% if auto_scan_enabled %}checked{% endif %}>
+        <label for="auto_scan_enabled" style="margin-bottom: 0;">Enable background auto-scan of Literature Root Folder</label>
+      </div>
+      <div class="field">
+        <label>Scan Interval</label>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <input type="number" name="auto_scan_interval_hours" id="auto_scan_interval_hours" value="{{ auto_scan_interval_hours }}" min="0" style="width: 80px;" placeholder="Hours">
+          <span>Hours</span>
+          <input type="number" name="auto_scan_interval_minutes" id="auto_scan_interval_minutes" value="{{ auto_scan_interval_minutes }}" min="0" max="59" style="width: 80px;" placeholder="Mins">
+          <span>Minutes</span>
+        </div>
+        <p style="font-size: 12px; color: var(--ink-soft); margin-top: 6px;">
+          The app will automatically check for new PDFs and classify them every X hours and Y minutes.
+        </p>
+      </div>
+
+      <h4 style="margin-top: 30px; margin-bottom: 10px;">AI Provider (optional)</h4>
+      <p style="font-size: 13px; color: var(--ink-soft); margin-bottom: 16px;">
+        Used only for: classifying/summarizing new papers on import, and "Reason across papers" search mode.
+        Everyday browsing and "Find papers" search never call this API. Leave everything blank to run fully offline for $0.
+      </p>
+      <div class="flash" style="background:#eef2ea; border-color:#cddbc3; color:#3c4a34;">
+        <strong>Free options:</strong> pick <em>OpenAI-compatible (local/free)</em> below and point it at:
+        <br>&bull; <strong>Ollama</strong> running on your own PC &mdash; 100% free, no key, no internet needed once the model is downloaded. Base URL: <code>http://localhost:11434/v1/chat/completions</code>, model e.g. <code>llama3</code>.
+        <br>&bull; <strong>Groq</strong> &mdash; free tier, cloud-hosted, fast. Base URL: <code>https://api.groq.com/openai/v1/chat/completions</code>, needs a free Groq API key.
+        <br>&bull; <strong>OpenRouter</strong> &mdash; some models are free. Base URL: <code>https://openrouter.ai/api/v1/chat/completions</code>, needs a free OpenRouter key, model e.g. <code>meta-llama/llama-3-8b-instruct:free</code>.
+      </div>
       <div class="field">
         <label for="ai_provider">Provider</label>
         <select name="ai_provider" id="ai_provider">

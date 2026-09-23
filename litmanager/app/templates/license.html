@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Software License Activation{% endblock %}
+{% block body %}
+<div class="main" style="max-width: 640px; margin: 40px auto; padding: 30px;">
+  <div style="text-align: center; margin-bottom: 30px;">
+    <h2>License Activation Required</h2>
+    <p style="color: var(--ink-soft);">This application requires a valid license key to run on this computer.</p>
+  </div>
+
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}{% for m in messages %}<div class="flash" style="background:#fce8e6; border-color:#f1c2be; color:#c0392b; margin-bottom: 20px;">{{ m }}</div>{% endfor %}{% endif %}
+  {% endwith %}
+
+  <div class="panel" style="margin-bottom: 25px; padding: 25px;">
+    <h3 style="margin-top: 0;">Step 1: Your Hardware ID</h3>
+    <p style="font-size: 14px; color: var(--ink-soft); margin-bottom: 10px;">
+      Please send the following unique Hardware ID to the software vendor to receive your activation key.
+    </p>
+    <div style="background: #f1f3f5; padding: 15px; border-radius: 6px; font-family: monospace; font-size: 18px; font-weight: bold; text-align: center; letter-spacing: 2px; color: #333;">
+      {{ hw_id }}
+    </div>
+  </div>
+
+  <div class="panel" style="padding: 25px;">
+    <h3 style="margin-top: 0;">Step 2: Enter License Key</h3>
+    <form method="post" action="{{ url_for('license_page') }}">
+      <div class="field">
+        <label for="license_key">License Key</label>
+        <input type="text" name="license_key" id="license_key" placeholder="XXXX-XXXX-XXXX-XXXX" required style="font-family: monospace; font-size: 16px; letter-spacing: 1px;">
+      </div>
+      <button type="submit" class="btn" style="width: 100%; font-size: 16px; padding: 12px; margin-top: 10px;">Activate Software</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

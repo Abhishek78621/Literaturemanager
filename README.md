@@ -1,102 +1,58 @@
-# 📚 Personal Literature Manager
+# Personal Literature Manager
+**Your Smart, Private, and Automated PDF Research Library**
 
-A privacy-focused, local-first web application designed to help researchers, students, and professionals organize, search, and understand their literature library. 
-
-Drag and drop your PDFs, and let the system automatically extract metadata, classify domains, generate technical summaries, and organize your files—all while keeping your data entirely local.
-
----
-
-## ✨ Key Features
-
-- **📂 Automated Hierarchical Organization:** Drop a PDF, and the app automatically determines the document type (e.g., Research Papers, Books, Reports), assigns a primary domain and subdomain (strict 2-level hierarchy), and physically organizes the file on your disk into nested folders.
-- **🧠 AI-Powered Insights (Optional):** Plug in your API key (OpenAI, Anthropic, or even a local **Ollama** server) to automatically generate technical summaries, plain-language explanations, and semantic tags for every imported paper.
-- **🔍 Fully Offline Semantic Search:** Search your library using natural language. The app uses local embeddings (`sentence-transformers`) to understand the meaning behind your search query, entirely offline.
-- **🌳 Beautiful Browser UI:** A clean, intuitive dashboard that mirrors your on-disk folder structure with a collapsible navigation tree. 
-- **💬 Reason Across Papers:** Ask deeper questions across your top locally-matched papers for synthesis and comparison.
-- **📅 "Today's Paper":** Get a daily recommendation weighted toward unread papers you've marked as interesting to help you stay on top of your reading list.
+Personal Literature Manager is a locally-hosted, privacy-first web application designed to help researchers, students, and professionals effortlessly organize, search, and understand their PDF collections. It leverages modern AI to do the heavy lifting of categorizing your papers while ensuring your files never leave your computer unless you explicitly enable a cloud AI provider.
 
 ---
 
-## 🚀 Quick Start (No Installation Needed)
+## 🌟 Key Features
 
-If you're on Windows and want to jump right in, you can build or use the standalone `.exe`:
+### 1. Smart Automated Organization
+- **Custom Library Root**: Choose exactly where on your hard drive your PDFs are stored.
+- **First-Time Auto-Sync**: Got an existing folder full of categorized PDFs? Point the app to it during setup, and it will automatically adopt your existing subfolders as your "Domains".
+- **Zero-Duplication Hard Links**: If a paper belongs to multiple domains (e.g., both "Computer Vision" and "Robotics"), the app stores only **one** physical copy of the PDF. For the other domains, it creates native Windows **Hard Links**, which act like normal files but take up **0 bytes** of extra disk space.
 
-1. Run `build_exe.bat` to automatically build the application.
-2. Double-click the generated `dist\LiteratureManager.exe`.
-3. Your browser will automatically open to `http://127.0.0.1:5001`.
-4. Go to **Import** and drag-and-drop a PDF.
-5. *Optional:* Go to **Settings** and add an API key (or configure a local AI model) to unlock automated summaries and classification.
+### 2. AI-Powered Classification & Summarization
+When you import a paper, you can use local AI (like Ollama) or cloud AI (like Claude or ChatGPT) to automatically read it for you:
+- **Auto-Categorization**: The AI determines the best primary and secondary domains for the paper and automatically moves the file into those folders.
+- **Smart Summaries**: Generates a technical summary, a simple explanation, and extracts keywords so you can understand a 30-page paper in 30 seconds.
+- **Fallback to Unclassified**: If the AI suggests a brand new domain that you haven't approved, the app safely places the paper in an "Unclassified" folder for manual review.
 
-Everything (PDFs + database) is stored locally in a `library/` folder that appears next to the executable. Your data never leaves your machine unless you explicitly choose to use a cloud AI provider.
+### 3. Background Daemon Scanner
+Never manually import a paper again. 
+- **Interval Scanning**: Configure the app to scan your Literature folder every X hours and Y minutes.
+- **Headless Mode**: Run the app on startup with the `--daemon` flag. It will run silently in the background, monitoring your folders without opening any annoying console windows or browsers.
+- **Smart Deduplication**: The scanner uses cryptographic SHA-256 hashing. If you drop a PDF into the folder that you already imported months ago, the scanner instantly skips it. It only processes genuinely new files.
 
----
-
-## 💻 Developer Setup
-
-If you prefer to run the application directly via Python (useful for macOS/Linux or active development):
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Abhishek78621/Literaturemanager.git
-   cd Literaturemanager/litmanager
-   ```
-
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-   *(Optional but recommended: `pip install sentence-transformers` for vastly superior offline semantic search).*
-
-3. Run the application:
-   ```bash
-   python run.py
-   # Or use the provided batch script on Windows: run_dev.bat
-   ```
+### 4. Advanced Semantic Search
+- **Find Papers**: Search for concepts, not just keywords. The app uses semantic embeddings to understand the *meaning* of your search query and finds the most relevant papers.
+- **Reason Across Papers**: Ask a complex question (e.g., "What are the limitations of multi-scale attention models mentioned in my library?"). The app will find the top relevant papers and use AI to synthesize a comprehensive answer with citations.
 
 ---
 
-## 🏗️ Project Architecture
+## 🚀 How to Use It
 
-- **Flask Backend:** Serves the local web interface and handles PDF processing.
-- **SQLite Database:** Lightweight, serverless local database for tracking papers, domains, and embeddings.
-- **Local Embeddings:** Uses TF-IDF or `sentence-transformers` for offline semantic matching without any cloud dependencies.
-- **Pluggable AI Services:** Designed to work flawlessly without AI, but highly extensible to OpenAI, Anthropic, Groq, OpenRouter, or local LLMs.
+### Getting Started
+1. **Launch the App**: Double click the `LiteratureManager.exe` file, or run `python run.py`.
+2. **First Setup**: Your browser will open. You will be prompted to enter your **Literature Root Folder Path**. Enter the path where you want to keep your PDFs (or where they already are).
+3. **Configure AI (Optional but Recommended)**: Go to **Settings**. You can configure a free local AI (like Ollama) or a cloud provider (Anthropic/OpenAI) for automatic summaries.
 
-```text
-LiteratureManager/
-├── litmanager/
-│   ├── run.py                 # Application entry point
-│   ├── app/                   
-│   │   ├── app.py             # Flask routes and core logic
-│   │   ├── database.py        # SQLite schema & operations
-│   │   ├── pdf_processor.py   # PDF text & metadata extraction
-│   │   ├── embeddings.py      # Semantic search engine
-│   │   ├── ai_service.py      # AI integrations & prompts
-│   │   ├── templates/         # HTML Jinja templates
-│   │   └── static/css/        # UI Styling
-│   ├── migrate_folders.py     # Data migration tools
-│   └── flatten.py             # Folder structure utilities
-└── README.md
-```
+### Importing Papers
+You have three ways to add papers:
+1. **Single File**: Go to the Import tab and drag-and-drop a single PDF.
+2. **Bulk Folder Import**: Go to the Import tab and enter a folder path to scan a massive batch of PDFs at once. You can choose to preserve their existing folder structure or let the AI completely re-organize them.
+3. **Background Scanner**: Drop a PDF directly into your Literature Root Folder in Windows Explorer. The background daemon will automatically find it, classify it, and move it to the right subfolder on its next scheduled scan!
+
+### Background Mode (Start with Windows)
+To run the app silently in the background so it's always ready:
+1. Right-click on your Desktop and choose **New -> Shortcut**.
+2. Point it to `LiteratureManager.exe`.
+3. Right-click the new shortcut, go to **Properties**, and add `--daemon` to the end of the **Target** field.
+4. Press `Win + R`, type `shell:startup`, and drag this shortcut into the folder. The app will now automatically run silently in the background every time you turn on your PC!
 
 ---
 
-## 🔒 Privacy & Cost Model
-
-This project is deeply committed to the **local-first** philosophy. 
-- Browsing, tagging, offline semantic search, and reading PDFs are **100% free and offline**.
-- The only time an API call is made is during paper import (1 call) or when specifically using the "Reason across papers" chat feature. 
-- You can route these calls through a local **Ollama** server for a completely free and private experience.
-
----
-
-## 🛣️ Roadmap
-
-- [ ] Automatic merging of near-duplicate domains.
-- [ ] Page/section-level full-text search capabilities.
-- [ ] Visual citation graphs for tracking paper relationships.
-- [ ] BibTeX / Zotero native export integrations.
-
----
-
-*Built for researchers who want complete control over their library.*
+## ⚙️ Technical Requirements
+- **OS**: Windows (due to native Hard Link implementation)
+- **Browser**: Any modern web browser (Chrome, Edge, Firefox, Safari)
+- **Optional**: `sentence-transformers` Python package for true local semantic search.
