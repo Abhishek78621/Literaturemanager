@@ -424,4 +424,4 @@ def sync_domains_from_folders(root_path):
     for entry in os.listdir(root_path):
         full_path = os.path.join(root_path, entry)
         if os.path.isdir(full_path):
-            _ensure_domain(entry)
+            get_or_create_domain(entry)
