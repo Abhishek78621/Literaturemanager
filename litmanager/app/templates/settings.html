@@ -107,5 +107,19 @@
       <button type="submit" class="btn secondary">Re-classify all 'Unclassified' papers</button>
     </form>
   </div>
+  <div class="panel">
+    <h3>License Transfer</h3>
+    <p style="font-size: 13px; color: var(--ink-soft); margin-bottom: 16px;">
+      To transfer your license to a new computer entirely offline, enter the new computer's Hardware ID below. 
+      <strong>Warning:</strong> This will instantly deactivate the license on THIS computer and generate a transfer code for the new one.
+    </p>
+    <form method="post" action="{{ url_for('transfer_license') }}">
+      <div class="field">
+        <label for="target_hw">Target Computer's Hardware ID</label>
+        <input type="text" name="target_hw" id="target_hw" placeholder="e.g. A1B2C3D4E5F67890" required>
+      </div>
+      <button type="submit" class="btn secondary" style="color: #c92a2a; border-color: #c92a2a;" onclick="return confirm('Are you sure you want to transfer this license? This computer will be deactivated permanently.');">Deactivate & Transfer</button>
+    </form>
+  </div>
 </div>
 {% endblock %}

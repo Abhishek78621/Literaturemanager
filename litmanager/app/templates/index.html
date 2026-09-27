@@ -18,22 +18,36 @@
       <li><a href="{{ url_for('index', domain='Unclassified') }}" class="{{ 'active' if active_domain=='Unclassified' }}">Unclassified <span class="count">{{ unclassified_domain.value.paper_count }}</span></a></li>
       {% endif %}
     </ul>
-    {% macro render_tree(tree_dict) %}
+    {% macro render_tree(tree_dict, depth=0) %}
       <ul style="padding-left: 0; margin-bottom: 0;">
         {% for name, node in tree_dict.items() %}
           <li>
             {% if node.subdomains %}
               <details class="domain-details" {% if active_path and active_path.startswith(node.path) %}open{% endif %}>
                 <summary class="domain-summary">
-                  <a href="{{ url_for('index', path=node.path) }}" class="{{ 'active' if active_path==node.path }}">{{ name }} <span class="count">{{ node.count }}</span></a>
+                  <a href="{{ url_for('index', path=node.path) }}" class="{{ 'active' if active_path==node.path }}">
+                    {% if depth == 0 %}
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--gold)" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; flex-shrink: 0;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                    {% else %}
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; flex-shrink: 0; opacity: 0.75;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                    {% endif %}
+                    <span style="flex-grow: 1;">{{ name }}</span> <span class="count">{{ node.count }}{% if node.ai_pending > 0 %}<span style="color:var(--maroon); margin-left: 4px; display: inline-flex; align-items: center;" title="{{ node.ai_pending }} papers need AI classification"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"></path><line x1="3" y1="3" x2="21" y2="21"></line></svg></span>{% elif node.count > 0 %}<span style="color:var(--moss); margin-left: 4px; display: inline-flex; align-items: center;" title="Fully AI classified"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"></path></svg></span>{% endif %}</span>
+                  </a>
                 </summary>
                 <div class="domain-children">
-                  {{ render_tree(node.subdomains) }}
+                  {{ render_tree(node.subdomains, depth + 1) }}
                 </div>
               </details>
             {% else %}
               <div class="domain-leaf">
-                <a href="{{ url_for('index', path=node.path) }}" class="{{ 'active' if active_path==node.path }}">{{ name }} <span class="count">{{ node.count }}</span></a>
+                <a href="{{ url_for('index', path=node.path) }}" class="{{ 'active' if active_path==node.path }}">
+                  {% if depth == 0 %}
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--gold)" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; flex-shrink: 0;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                  {% else %}
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; flex-shrink: 0; opacity: 0.75;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                  {% endif %}
+                  <span style="flex-grow: 1;">{{ name }}</span> <span class="count">{{ node.count }}{% if node.ai_pending > 0 %}<span style="color:var(--maroon); margin-left: 4px; display: inline-flex; align-items: center;" title="{{ node.ai_pending }} papers need AI classification"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"></path><line x1="3" y1="3" x2="21" y2="21"></line></svg></span>{% elif node.count > 0 %}<span style="color:var(--moss); margin-left: 4px; display: inline-flex; align-items: center;" title="Fully AI classified"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"></path></svg></span>{% endif %}</span>
+                </a>
               </div>
             {% endif %}
           </li>
@@ -67,6 +81,9 @@
         <div style="margin-bottom: 12px; display: flex; gap: 12px; align-items: center; padding: 0 16px;">
           <input type="checkbox" id="select-all" title="Select all papers on this page">
           <label for="select-all" style="font-size: 13px; color: var(--ink-soft); cursor: pointer;">Select All</label>
+          <button type="submit" id="classify-selected-btn" class="btn secondary" formaction="{{ url_for('reclassify_multiple_papers') }}" style="display: none; padding: 4px 12px; font-size: 12px; color: var(--moss); border-color: rgba(92,110,79,0.2);" onclick="return confirm('Classify selected papers with AI? This may take some time depending on the number of papers.');">
+            Classify Selected with AI
+          </button>
           <button type="submit" id="delete-selected-btn" class="btn secondary" style="display: none; padding: 4px 12px; font-size: 12px; color: #d32f2f; border-color: #f5c6c6;" onclick="return confirm('Are you sure you want to permanently delete all selected papers?');">
             Delete Selected
           </button>
@@ -80,6 +97,7 @@
             <div class="meta">{{ p.authors or 'Unknown authors' }}{% if p.year %} &middot; {{ p.year }}{% endif %}</div>
             <div class="tags">
               {% if p.primary_domain %}<span class="badge domain">{{ p.primary_domain }}</span>{% endif %}
+              {% if not p.technical_summary %}<span class="badge" title="This paper has not been analyzed by AI yet">Needs AI</span>{% else %}<span class="badge" style="background: rgba(92,110,79,0.1); color: var(--moss); border-color: rgba(92,110,79,0.2);" title="This paper has been classified by AI">AI Classified</span>{% endif %}
               {% if p.interesting %}<span class="badge interesting">Interesting</span>{% endif %}
               {% if not p.read %}<span class="badge">Unread</span>{% endif %}
             </div>
@@ -92,22 +110,24 @@
         const selectAllCheckbox = document.getElementById('select-all');
         const paperCheckboxes = document.querySelectorAll('.paper-checkbox');
         const deleteBtn = document.getElementById('delete-selected-btn');
+        const classifyBtn = document.getElementById('classify-selected-btn');
 
-        function updateDeleteBtn() {
+        function updateBulkBtns() {
             const anyChecked = Array.from(paperCheckboxes).some(cb => cb.checked);
             deleteBtn.style.display = anyChecked ? 'inline-block' : 'none';
+            classifyBtn.style.display = anyChecked ? 'inline-block' : 'none';
         }
 
         if (selectAllCheckbox) {
             selectAllCheckbox.addEventListener('change', function() {
                 paperCheckboxes.forEach(cb => cb.checked = this.checked);
-                updateDeleteBtn();
+                updateBulkBtns();
             });
 
             paperCheckboxes.forEach(cb => {
                 cb.addEventListener('change', function() {
                     if (!this.checked) selectAllCheckbox.checked = false;
-                    updateDeleteBtn();
+                    updateBulkBtns();
                 });
             });
         }

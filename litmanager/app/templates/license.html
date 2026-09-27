@@ -1,35 +1,225 @@
-{% extends "base.html" %}
-{% block title %}Software License Activation{% endblock %}
-{% block body %}
-<div class="main" style="max-width: 640px; margin: 40px auto; padding: 30px;">
-  <div style="text-align: center; margin-bottom: 30px;">
-    <h2>License Activation Required</h2>
-    <p style="color: var(--ink-soft);">This application requires a valid license key to run on this computer.</p>
-  </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Welcome | Activation Required</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+    }
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: 'Outfit', sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    
+    /* Animated Background Orbs */
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      z-index: 0;
+      animation: float 20s infinite alternate ease-in-out;
+    }
+    .orb-1 { width: 400px; height: 400px; background: rgba(99, 102, 241, 0.4); top: -100px; left: -100px; }
+    .orb-2 { width: 500px; height: 500px; background: rgba(236, 72, 153, 0.3); bottom: -150px; right: -100px; animation-delay: -5s; }
+    
+    @keyframes float {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(50px, 50px) scale(1.1); }
+    }
 
-  {% with messages = get_flashed_messages() %}
-    {% if messages %}{% for m in messages %}<div class="flash" style="background:#fce8e6; border-color:#f1c2be; color:#c0392b; margin-bottom: 20px;">{{ m }}</div>{% endfor %}{% endif %}
-  {% endwith %}
+    /* Glassmorphism Card */
+    .glass-card {
+      position: relative;
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 50px 40px;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      opacity: 0;
+      transform: translateY(30px);
+    }
 
-  <div class="panel" style="margin-bottom: 25px; padding: 25px;">
-    <h3 style="margin-top: 0;">Step 1: Your Hardware ID</h3>
-    <p style="font-size: 14px; color: var(--ink-soft); margin-bottom: 10px;">
-      Please send the following unique Hardware ID to the software vendor to receive your activation key.
-    </p>
-    <div style="background: #f1f3f5; padding: 15px; border-radius: 6px; font-family: monospace; font-size: 18px; font-weight: bold; text-align: center; letter-spacing: 2px; color: #333;">
-      {{ hw_id }}
+    @keyframes slideUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .header-text {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .header-text h1 {
+      margin: 0 0 10px 0;
+      font-size: 32px;
+      font-weight: 700;
+      background: linear-gradient(to right, #a5b4fc, #fbcfe8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .header-text p {
+      margin: 0;
+      color: #94a3b8;
+      font-size: 15px;
+      font-weight: 300;
+    }
+
+    .step-box {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 25px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .step-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #818cf8;
+      font-weight: 600;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    .hw-id {
+      background: rgba(0,0,0,0.4);
+      padding: 15px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 20px;
+      text-align: center;
+      letter-spacing: 3px;
+      color: #f8fafc;
+      border: 1px dashed rgba(148, 163, 184, 0.3);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .hw-id:hover {
+      background: rgba(99, 102, 241, 0.1);
+      border-color: rgba(99, 102, 241, 0.5);
+    }
+
+    input[type="text"] {
+      width: 100%;
+      box-sizing: border-box;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 16px;
+      border-radius: 8px;
+      color: white;
+      font-family: monospace;
+      font-size: 16px;
+      letter-spacing: 1px;
+      text-align: center;
+      outline: none;
+      transition: all 0.3s;
+    }
+    input[type="text"]:focus {
+      border-color: var(--primary);
+      background: rgba(0,0,0,0.3);
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+    }
+    input[type="text"]::placeholder {
+      color: #475569;
+    }
+
+    button {
+      width: 100%;
+      padding: 16px;
+      border-radius: 8px;
+      border: none;
+      background: var(--primary);
+      color: white;
+      font-family: 'Outfit', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 10px;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+    }
+    button:hover {
+      background: var(--primary-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5);
+    }
+
+    .flash {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 25px;
+      text-align: center;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.2); }
+      70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Animated Background -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <!-- Main Card -->
+  <div class="glass-card">
+    
+    <div class="header-text">
+      <h1>Welcome</h1>
+      <p>Please activate your software to continue.</p>
     </div>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for m in messages %}
+          <div class="flash">{{ m }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="step-box">
+      <span class="step-title">Step 1: Your Machine ID</span>
+      <p style="font-size: 13px; color: #94a3b8; margin: 0 0 12px 0;">Share this code with the software provider to receive your activation key.</p>
+      <div class="hw-id" onclick="navigator.clipboard.writeText('{{ hw_id }}'); alert('Hardware ID copied to clipboard!');" title="Click to copy">
+        {{ hw_id }}
+      </div>
+    </div>
+
+    <div class="step-box" style="margin-bottom: 0;">
+      <span class="step-title">Step 2: Activation Key</span>
+      <form method="post" action="{{ url_for('license_page') }}">
+        <input type="text" name="license_key" id="license_key" placeholder="XXXX-XXXX-XXXX-XXXX" required autocomplete="off">
+        <button type="submit">Unlock Software &rarr;</button>
+      </form>
+    </div>
+
   </div>
 
-  <div class="panel" style="padding: 25px;">
-    <h3 style="margin-top: 0;">Step 2: Enter License Key</h3>
-    <form method="post" action="{{ url_for('license_page') }}">
-      <div class="field">
-        <label for="license_key">License Key</label>
-        <input type="text" name="license_key" id="license_key" placeholder="XXXX-XXXX-XXXX-XXXX" required style="font-family: monospace; font-size: 16px; letter-spacing: 1px;">
-      </div>
-      <button type="submit" class="btn" style="width: 100%; font-size: 16px; padding: 12px; margin-top: 10px;">Activate Software</button>
-    </form>
-  </div>
-</div>
-{% endblock %}
+</body>
+</html>

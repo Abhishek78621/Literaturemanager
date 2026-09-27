@@ -17,10 +17,11 @@
 9. [Feature 6 — Background Auto-Scanner](#9-feature-6--background-auto-scanner)
 10. [Feature 7 — Settings Page](#10-feature-7--settings-page)
 11. [Feature 8 — AI Integration](#11-feature-8--ai-integration)
-12. [Feature 9 — Hard Links & Zero-Duplication Storage](#12-feature-9--hard-links--zero-duplication-storage)
-13. [Feature 10 — Daemon / Background Mode](#13-feature-10--daemon--background-mode)
-14. [Data Storage & File Layout](#14-data-storage--file-layout)
-15. [Troubleshooting](#15-troubleshooting)
+12. [Feature 9 — Licensing & Offline Transfer](#12-feature-9--licensing--offline-transfer)
+13. [Feature 10 — Hard Links & Zero-Duplication Storage](#13-feature-10--hard-links--zero-duplication-storage)
+14. [Feature 11 — Daemon / Background Mode](#14-feature-11--daemon--background-mode)
+15. [Data Storage & File Layout](#15-data-storage--file-layout)
+16. [Troubleshooting](#16-troubleshooting)
 
 ---
 
@@ -88,9 +89,16 @@ Your browser opens automatically to `http://127.0.0.1:5001`.
 
 > **Note:** The console window that appears is the app's server. **Do not close it** while you are using the app. Press `Ctrl+C` in it to stop the app.
 
-### Step 2 — First-Time Setup Screen
+### Step 2 — License Activation Screen
 
-On the very first launch you will see the **Setup** screen. You must enter your **Literature Root Folder Path** — this is the folder where all your PDFs will be stored and organized.
+On the very first launch, you will see a stunning **License Activation** screen. The app operates on a strict "one license per computer" model. 
+1. Note the unique **Hardware ID** shown on screen.
+2. If you are the owner, use your master secret to generate a license key for this ID. If you received the app from a friend, share this Hardware ID with them so they can transfer the license to you.
+3. Enter the generated **License Key** to permanently unlock the app on your computer.
+
+### Step 3 — First-Time Setup Screen
+
+After activation, you will see the **Setup** screen. You must enter your **Literature Root Folder Path** — this is the folder where all your PDFs will be stored and organized.
 
 **Examples:**
 ```
@@ -143,6 +151,11 @@ Each card shows:
 - Primary domain badge
 - "Interesting" star indicator
 
+### Bulk Operations
+
+You can use the checkboxes next to each paper to perform bulk actions:
+- **Classify Selected with AI:** Select multiple "Unclassified" papers and click this button at the top of the library. The app will process all selected papers through the AI (if an API key is configured) and automatically organize them into the correct domains.
+
 Click a card to open the **Paper Detail** page.
 
 ---
@@ -191,7 +204,9 @@ You have **two import methods**: single file and bulk folder.
 
 A **live progress bar** appears, updating in real-time via server-sent events. You see each file as it is processed, skipped (duplicate), or failed.
 
-**Deduplication:** Every file is SHA-256 hashed before processing. If the same PDF already exists in your library (even under a different filename), it is silently skipped. You will never have duplicates.
+**Deduplication & Duplicate Handling:** Every file is SHA-256 hashed before processing. If the exact same PDF already exists in your library, it is silently skipped. In the live log, skipped duplicates will be **highlighted in red**. When the bulk import finishes, a browser alert will pop up summarizing exactly how many new papers were imported and how many were skipped.
+
+**Temporary Folder Cleanup:** During bulk imports, the app extracts files to a `.temp_uploads` folder. The app now guarantees this folder (and any empty sub-directories inside it) is completely wiped clean when the import finishes, preventing storage bloat.
 
 ---
 
@@ -487,7 +502,27 @@ If the AI suggests a **brand-new domain** that does not exist in your library ye
 
 ---
 
-## 12. Feature 9 — Hard Links & Zero-Duplication Storage
+## 12. Feature 9 — Licensing & Offline Transfer
+
+The application uses an **offline device-locked licensing system** to prevent unauthorized distribution while remaining 100% offline.
+
+### How it works:
+- Licenses are bound cryptographically to a computer's unique **Hardware ID**.
+- The app requires no internet to activate or verify licenses.
+- Copying the `.exe` and the license key to another computer will fail because the Hardware IDs will not match.
+
+### Transferring to a New Computer:
+If you legitimately want to move your license to a new computer (or give it to a friend):
+1. Open the app on the **New Computer**. Note the 16-character **Hardware ID** displayed on the activation screen.
+2. Open the app on your **Old Computer** (which is already activated).
+3. Go to **Settings** -> **License Transfer**.
+4. Enter the new computer's Hardware ID and click **Deactivate & Transfer**.
+5. The old computer will **permanently delete its own license** and generate a new **Transfer Code**.
+6. Enter this Transfer Code on the new computer to activate it.
+
+---
+
+## 13. Feature 10 — Hard Links & Zero-Duplication Storage
 
 When a paper belongs to **multiple domains** (primary domain + sub-domains), the app stores only **one physical copy** of the PDF on disk and creates **Windows Hard Links** for the other domains.
 
@@ -513,7 +548,7 @@ Both "files" are the same data. Opening, editing, or copying either one is ident
 
 ---
 
-## 13. Feature 10 — Daemon / Background Mode
+## 14. Feature 11 — Daemon / Background Mode
 
 Run the app silently in the background with no browser window or console:
 
@@ -539,7 +574,7 @@ Now the app runs silently every time your PC starts, monitoring your library in 
 
 ---
 
-## 14. Data Storage & File Layout
+## 15. Data Storage & File Layout
 
 ```
 LiteratureManager/
@@ -574,7 +609,7 @@ LiteratureManager/
 
 ---
 
-## 15. Troubleshooting
+## 16. Troubleshooting
 
 ### App does not open in browser
 The server runs on port `5001`. Open `http://127.0.0.1:5001` manually. Ensure nothing else is using port 5001.

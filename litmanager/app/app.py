@@ -118,6 +118,24 @@ def license_page():
             flash("Invalid License Key. Please try again.")
     return render_template("license.html", hw_id=hw_id)
 
+@app.route("/transfer_license", methods=["POST"])
+def transfer_license():
+    target_hw = request.form.get("target_hw", "").strip()
+    if not target_hw:
+        flash("Target Hardware ID is required.")
+        return redirect(url_for('settings'))
+    
+    # Generate the license key for the TARGET hardware ID using the master secret
+    raw_str = target_hw + SECRET_SALT
+    full_hash = hashlib.sha256(raw_str.encode("utf-8")).hexdigest()
+    key = full_hash[:16].upper()
+    transfer_key = f"{key[:4]}-{key[4:8]}-{key[8:12]}-{key[12:16]}"
+    
+    # Deactivate the CURRENT device
+    db.set_setting("license_key", "")
+    
+    return render_template("transfer_success.html", transfer_key=transfer_key)
+
 
 @app.route("/setup", methods=["GET", "POST"])
 def setup():
@@ -214,6 +232,85 @@ def delete_multiple_papers():
         flash("No papers were deleted.")
     return redirect(url_for("index"))
 
+@app.route("/reclassify_multiple_papers", methods=["POST"])
+def reclassify_multiple_papers():
+    if not ai_service.is_configured():
+        flash("AI is not configured. Please configure it in settings first.")
+        return redirect(url_for("index"))
+
+    paper_ids = request.form.getlist("paper_ids")
+    success_count = 0
+    fail_count = 0
+
+    existing_domains = [d["name"] for d in db.list_domains() if d["name"] != "Unclassified"]
+
+    for pid in paper_ids:
+        try:
+            paper_id = int(pid)
+            paper = db.get_paper(paper_id)
+            if not paper or not os.path.exists(paper["pdf_path"]):
+                fail_count += 1
+                continue
+
+            extracted = pdf_processor.extract(paper["pdf_path"])
+            text_for_ai = (extracted.get("abstract") or extracted.get("full_text_sample", "")).strip()
+
+            if len(text_for_ai) < 30:
+                fail_count += 1
+                continue
+
+            result = ai_service.classify_and_summarize(text_for_ai, paper["title"], existing_domains)
+            meta = {
+                "primary_domain": result.get("primary_domain"),
+                "domains": [result.get("primary_domain")] + result.get("subdomains", []),
+                "keywords": ", ".join(result.get("keywords", [])),
+                "technical_summary": result.get("technical_summary"),
+                "simple_explanation": result.get("simple_explanation"),
+                "tags": result.get("keywords", [])
+            }
+            meta["domains"] = [d for d in meta["domains"] if d]
+
+            if not meta.get("domains"):
+                meta["primary_domain"] = "Unclassified"
+                meta["domains"] = ["Unclassified"]
+
+            db.update_paper_classification(paper_id, meta)
+            
+            if meta["primary_domain"] != "Unclassified":
+                old_path = paper["pdf_path"]
+                doc_type = meta.get("document_type", "Research_Papers").replace(" ", "_")
+                safe_domains = [d.replace(" ", "_") for d in meta.get("domains", []) if d]
+                target_dir = os.path.join(get_library_dir(), doc_type, *safe_domains)
+                os.makedirs(target_dir, exist_ok=True)
+                
+                new_path = os.path.join(target_dir, os.path.basename(old_path))
+                new_path = _dedupe_path(new_path)
+                
+                if os.path.normpath(old_path) != os.path.normpath(new_path) and os.path.exists(old_path):
+                    shutil.move(old_path, new_path)
+                    db.update_paper(paper_id, {"pdf_path": new_path})
+            else:
+                old_path = paper["pdf_path"]
+                if os.path.normpath(get_unclassified_dir()) not in os.path.normpath(old_path):
+                    new_path = os.path.join(get_unclassified_dir(), os.path.basename(old_path))
+                    new_path = _dedupe_path(new_path)
+                    if os.path.exists(old_path):
+                        shutil.move(old_path, new_path)
+                        db.update_paper(paper_id, {"pdf_path": new_path})
+            
+            updated_paper = db.get_paper(paper_id)
+            text = embeddings.paper_searchable_text(updated_paper)
+            vector = embeddings.embed_text(text)
+            db.save_embedding(paper_id, vector)
+            
+            success_count += 1
+        except Exception:
+            fail_count += 1
+
+    db.cleanup_empty_domains()
+    flash(f"Successfully re-classified {success_count} paper(s). Failed: {fail_count}.")
+    return redirect(url_for("index"))
+
 @app.route("/paper/<int:paper_id>/reclassify", methods=["POST"])
 def reclassify_paper(paper_id):
     if not ai_service.is_configured():
@@ -305,25 +402,37 @@ def upload_paper():
     relative_path = request.form.get("relative_path") or file.filename
     org_mode = request.form.get("organization_mode", "preserve")
 
-    temp_dir = os.path.join(get_library_dir(), ".temp_uploads")
+    temp_dir = os.path.abspath(os.path.join(get_library_dir(), ".temp_uploads"))
     os.makedirs(temp_dir, exist_ok=True)
 
     safe_rel_path = os.path.normpath(relative_path).lstrip("/\\")
-    dest_path = os.path.join(temp_dir, safe_rel_path)
-    os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+    dest_path = os.path.abspath(os.path.join(temp_dir, safe_rel_path))
+    
+    if not dest_path.startswith(temp_dir):
+        return jsonify({"error": "Invalid file path."}), 400
 
+    os.makedirs(os.path.dirname(dest_path), exist_ok=True)
     file.save(dest_path)
 
     existing_domains = [d["name"] for d in db.list_domains()]
 
+    def cleanup_temp():
+        if os.path.exists(dest_path):
+            os.remove(dest_path)
+        dir_to_clean = os.path.dirname(dest_path)
+        while dir_to_clean != temp_dir:
+            try:
+                os.rmdir(dir_to_clean)
+                dir_to_clean = os.path.dirname(dir_to_clean)
+            except OSError:
+                break
+
     try:
         res = process_single_file(dest_path, temp_dir, org_mode, existing_domains)
-        if os.path.exists(dest_path):
-            os.remove(dest_path)
+        cleanup_temp()
         return jsonify(res)
     except Exception as e:
-        if os.path.exists(dest_path):
-            os.remove(dest_path)
+        cleanup_temp()
         return jsonify({"error": str(e)}), 500
 
 def get_sha256(filepath):
@@ -390,8 +499,19 @@ def process_single_file(file_path, folder_path, org_mode, existing_domains):
                     pass
         
         if not meta.get("domains"):
-            meta["primary_domain"] = "Unclassified"
-            meta["domains"] = ["Unclassified"]
+            # Fallback to preserve mode logic
+            rel_path = os.path.relpath(os.path.dirname(file_path), folder_path)
+            if rel_path == "." or not rel_path:
+                domains = []
+            else:
+                domains = [d for d in rel_path.split(os.sep) if d]
+                
+            if domains:
+                meta["primary_domain"] = domains[0]
+                meta["domains"] = domains
+            else:
+                meta["primary_domain"] = "Unclassified"
+                meta["domains"] = ["Unclassified"]
             
     doc_type = meta.get("document_type", "Research_Papers").replace(" ", "_")
     safe_domains = [d.replace(" ", "_") for d in meta.get("domains", []) if d]
@@ -442,7 +562,7 @@ def process_single_file(file_path, folder_path, org_mode, existing_domains):
     vector = embeddings.embed_text(text)
     db.save_embedding(paper_id, vector)
     
-    return {"status": "imported", "message": f"Imported: {filename}"}
+    return {"status": "imported", "message": f"Imported: {filename}", "paper_id": paper_id}
 
 def background_scanner_loop():
     while True:
@@ -694,38 +814,43 @@ def get_library_tree(all_papers):
         if p.get("primary_domain") == "Unclassified":
             continue
         pdf_path = p.get("pdf_path", "")
-        doc_type_safe = p.get("document_type", "Research_Papers").replace(" ", "_")
+        doc_type_raw_meta = p.get("document_type", "Research_Papers").replace(" ", "_")
+        doc_type = p.get("document_type", "Research Papers")
         
         try:
-            norm_path = os.path.normpath(pdf_path)
-            parts = norm_path.split(os.sep)
+            rel_path = os.path.relpath(pdf_path, get_library_dir())
+            rel_parts = rel_path.split(os.sep)
             
-            if doc_type_safe in parts:
-                idx = parts.index(doc_type_safe)
-                rel_parts = parts[idx:]
+            if rel_parts and rel_parts[0] == "..":
+                domains_raw = [p.get("primary_domain", "Unclassified").replace(" ", "_")]
+                physical_prefixes = domains_raw
             else:
-                rel_path = os.path.relpath(pdf_path, get_library_dir())
-                rel_parts = rel_path.split(os.sep)
-                if rel_parts and rel_parts[0] == "..":
-                    rel_parts = [doc_type_safe, p.get("primary_domain", "Unclassified").replace(" ", "_"), "dummy.pdf"]
+                if len(rel_parts) > 0 and rel_parts[0] == doc_type_raw_meta:
+                    domains_raw = rel_parts[1:-1]
+                    physical_prefixes = [doc_type_raw_meta] + domains_raw
+                else:
+                    domains_raw = rel_parts[:-1]
+                    physical_prefixes = domains_raw
             
-            if len(rel_parts) >= 2:
-                doc_type_raw = rel_parts[0]
-                doc_type = doc_type_raw.replace("_", " ")
-                domains_raw = rel_parts[1:-1]
-                domains = [part.replace("_", " ") for part in domains_raw]
-                
-                if doc_type not in tree:
-                    tree[doc_type] = {}
-                
-                curr = tree[doc_type]
-                current_prefix = doc_type_raw
-                for i, d in enumerate(domains):
-                    current_prefix = current_prefix + "/" + domains_raw[i]
-                    if d not in curr:
-                        curr[d] = {"count": 0, "subdomains": {}, "path": current_prefix}
-                    curr[d]["count"] += 1
-                    curr = curr[d]["subdomains"]
+            domains = [part.replace("_", " ") for part in domains_raw]
+            
+            if doc_type not in tree:
+                tree[doc_type] = {}
+            
+            curr = tree[doc_type]
+            
+            for i, d in enumerate(domains):
+                if len(rel_parts) > 0 and rel_parts[0] == doc_type_raw_meta:
+                    current_prefix = "/".join(physical_prefixes[:i+2])
+                else:
+                    current_prefix = "/".join(physical_prefixes[:i+1])
+                    
+                if d not in curr:
+                    curr[d] = {"count": 0, "subdomains": {}, "path": current_prefix, "ai_pending": 0}
+                curr[d]["count"] += 1
+                if not p.get("technical_summary"):
+                    curr[d]["ai_pending"] += 1
+                curr = curr[d]["subdomains"]
         except ValueError:
             pass
     return tree

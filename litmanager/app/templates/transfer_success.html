@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}License Transferred{% endblock %}
+{% block body %}
+<div class="main" style="max-width: 640px; margin: 0 auto; text-align: center; margin-top: 50px;">
+  <h1 style="color: #2b8a3e;">Transfer Successful</h1>
+  <p>Your license on this computer has been deactivated.</p>
+  
+  <div class="panel" style="margin-top: 30px; padding: 30px;">
+    <h3>Your Transfer Code</h3>
+    <p style="font-size: 14px; color: var(--ink-soft); margin-bottom: 20px;">
+      Enter this exact code on the new computer to activate it.
+    </p>
+    <div style="font-size: 24px; font-weight: bold; font-family: monospace; letter-spacing: 2px; padding: 20px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px;">
+      {{ transfer_key }}
+    </div>
+  </div>
+
+  <div style="margin-top: 30px;">
+    <a href="{{ url_for('index') }}" class="btn">Return to Home</a>
+    <p style="font-size: 12px; color: var(--ink-soft); margin-top: 10px;">
+      (Note: since this device is now deactivated, you will be prompted for a license key to access the app).
+    </p>
+  </div>
+</div>
+{% endblock %}

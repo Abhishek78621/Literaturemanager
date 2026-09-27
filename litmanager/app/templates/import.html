@@ -142,6 +142,7 @@ function addFiles(newFiles) {
   filesToUpload = filesToUpload.concat(newFiles);
   if (filesToUpload.length > 0) {
     startBtn.style.display = 'inline-block';
+    startBtn.disabled = false;
     startBtn.textContent = `Import ${filesToUpload.length} file${filesToUpload.length > 1 ? 's' : ''}`;
   }
 }
@@ -184,24 +185,31 @@ startBtn.addEventListener('click', async () => {
       
       const data = await response.json();
       if (response.ok) {
-        if (data.status === 'skipped') {
+          if (data.status === 'skipped') {
           skippedCount++;
-          log(`  -> Skipped: ${data.message}`);
+          log(`<span style="color: red;">  -> Skipped (Already Exists): ${data.message}</span>`);
         } else {
           successCount++;
-          log(`  -> Success: ${data.message}`);
+          if (data.paper_id) {
+            log(`  -> Success: <a href="/paper/${data.paper_id}" target="_blank" style="color: var(--primary); text-decoration: underline;">${data.message}</a>`);
+          } else {
+            log(`  -> Success: ${data.message}`);
+          }
         }
       } else {
         failCount++;
-        log(`  -> Error: ${data.error || 'Unknown error'}`);
+        log(`<span style="color: red;">  -> Error: ${data.error || 'Unknown error'}</span>`);
       }
     } catch (e) {
       failCount++;
-      log(`  -> Failed to upload: ${e.message}`);
+      log(`<span style="color: red;">  -> Failed to upload: ${e.message}</span>`);
     }
   }
   
   log(`\nDone! Imported: ${successCount}, Skipped: ${skippedCount}, Failed: ${failCount}`);
+  if (skippedCount > 0) {
+    alert(`${skippedCount} paper(s) already exist in your library and were skipped.`);
+  }
   filesToUpload = [];
   startBtn.textContent = 'Completed';
   
